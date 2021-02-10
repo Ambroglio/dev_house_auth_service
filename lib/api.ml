@@ -111,14 +111,21 @@ let get_member req =
                 Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
                 |> Lwt.return
             | Ok iss ->
-              let id = Router.param req "id" in 
-              MemberService.get_by_id ~id:id >>= (function
-              | Error e ->
-                Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
-                |> Lwt.return
-              | Ok member -> 
-                Response.make ~status: `OK ~body:(Body.of_string (Yojson.Basic.pretty_to_string member)) ()
-                |> Lwt.return
+              let id = Router.param req "id" in
+              let matching_ids = id = iss in
+              (
+                match matching_ids with
+                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | true ->
+                MemberService.get_by_id ~id:id >>= 
+                (function
+                  | Error e ->
+                    Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                    |> Lwt.return
+                  | Ok member -> 
+                    Response.make ~status: `OK ~body:(Body.of_string (Yojson.Basic.pretty_to_string member)) ()
+                    |> Lwt.return
+                )
               )
           )
     )
