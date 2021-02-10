@@ -1,0 +1,239 @@
+{
+	"info": {
+		"_postman_id": "ae29ecff-2c28-4d26-811d-0de832d307df",
+		"name": "QSI AUTH",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Heartbeat",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Echo",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"message\": \"test\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/echo",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"echo"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Signup",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"jean_claude@gmail.com\",\n    \"username\": \"jean_claude\",\n    \"password\": \"azertyuiop\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/signup",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Signin",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"mullie.ambroise@gmail.com\",\n    \"password\": \"poiuytreza\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/signin",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"signin"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Verify token",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"jwt\": \"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMzUwZDU5Yi1lNmUxLTRmMWQtYmY5Yy1hNTFmYTg2ZDAyYmMiLCJpc3MiOiJhdXRoLm1pYWdlLnJvY2tzIiwiaWF0IjoiMTYxMjk2ODU5NCIsImV4cCI6IjE2MTMyMjc3OTQifQ.K7Z6QSTxgoUcv9ezmL3tC3Jbi4G2h_fjS0m1qya9qQgHpwpMze45P0NsnUEKaumlyZFaIlXV8LLpPMMFQ8o0xw\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/verify",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"verify"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Member",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMzUwZDU5Yi1lNmUxLTRmMWQtYmY5Yy1hNTFmYTg2ZDAyYmMiLCJpc3MiOiJhdXRoLm1pYWdlLnJvY2tzIiwiaWF0IjoiMTYxMjk2ODU5NCIsImV4cCI6IjE2MTMyMjc3OTQifQ.K7Z6QSTxgoUcv9ezmL3tC3Jbi4G2h_fjS0m1qya9qQgHpwpMze45P0NsnUEKaumlyZFaIlXV8LLpPMMFQ8o0xw",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/member/e350d59b-e6e1-4f1d-bf9c-a51fa86d02bc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"member",
+						"e350d59b-e6e1-4f1d-bf9c-a51fa86d02bc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Member",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwNWIxMmZkYS1iNmNjLTQ3YWYtYmRkOC0xMTZjNDY1MjEyMWIiLCJpc3MiOiJhdXRoLm1pYWdlLnJvY2tzIiwiaWF0IjoiMTYxMjk1NjcxNCIsImV4cCI6IjE2MTMyMTU5MTQifQ.RA3O2Dsl4H57AiObkPi59ZTRG8xvWcnit1G9EADEOVgMZTK-OdauzPwDYhyE-K-8OD8t1_bt2bWiuIq_5a0Urw",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/member/05b12fda-b6cc-47af-bdd8-116c4652121b",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"member",
+						"05b12fda-b6cc-47af-bdd8-116c4652121b"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Member",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMzUwZDU5Yi1lNmUxLTRmMWQtYmY5Yy1hNTFmYTg2ZDAyYmMiLCJpc3MiOiJhdXRoLm1pYWdlLnJvY2tzIiwiaWF0IjoiMTYxMjk2ODU5NCIsImV4cCI6IjE2MTMyMjc3OTQifQ.K7Z6QSTxgoUcv9ezmL3tC3Jbi4G2h_fjS0m1qya9qQgHpwpMze45P0NsnUEKaumlyZFaIlXV8LLpPMMFQ8o0xw",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"username\": \"Ambroglio\",\n    \"email\": \"mullie.ambroise@gmail.com\",\n    \"password\": \"poiuytreza\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/member/e350d59b-e6e1-4f1d-bf9c-a51fa86d02bc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"member",
+						"e350d59b-e6e1-4f1d-bf9c-a51fa86d02bc"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
