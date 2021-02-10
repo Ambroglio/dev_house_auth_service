@@ -17,11 +17,16 @@ let set_logger () =
   Logs.set_level Infra.Environment.log_level
 
 
+let print_error msg = `Assoc [ ("error_message", `String msg) ] |> Yojson.Basic.pretty_to_string
+
+let json_response ~status ~body = Response.make ~status ~body ~headers:(Httpaf.Headers.of_list [("Content-Type", "application/json");])
+
 (** Heartbeat route *)
 let root req =
-  Printf.sprintf "Welcome to auth server"
-  |> Response.of_plain_text
-  |> Lwt.return
+  let open Lwt in
+    let body = `Assoc [ ("status", `String "all fine")] |> Yojson.Basic.pretty_to_string in
+      json_response ~status:`OK ~body:(Body.of_string body) ()
+      |> Lwt.return
 
 
 (** Testing purpose route *)
@@ -31,7 +36,7 @@ let echo req =
   |> Request.to_json
   >>= fun json ->
   let body = Option.get json |> Yojson.Safe.to_string |> Body.of_string in
-  Response.make ~body () |> Lwt.return
+  json_response ~status:`OK ~body () |> Lwt.return
 
 
 (** Singnup route *)
@@ -40,7 +45,7 @@ let signup req =
   req
   |> Request.to_json
   >>= function
-  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+  | None -> json_response ~status:`Bad_request ~body:(Body.of_string (print_error "There is no JSON body")) () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
@@ -48,9 +53,11 @@ let signup req =
       MemberService.signup ~email ~password
       >>= (function
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+          json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
           |> Lwt.return
-      | Ok _ -> Response.make ~status:`Created () |> Lwt.return)
+      | Ok _ -> 
+        let body = `Assoc [ ("status", `String "Signed up")] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+        json_response ~status:`Created ~body () |> Lwt.return)
 
 
 (** Singnin route *)
@@ -59,7 +66,7 @@ let signin req =
   req
   |> Request.to_json
   >>= function
-  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+  | None -> json_response ~status:`Bad_request ~body:(Body.of_string (print_error "There is no JSON body")) () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
@@ -67,15 +74,16 @@ let signin req =
       MemberService.signin ~email ~password
       >>= (function
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+          json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
           |> Lwt.return
       | Ok jwt ->
           ( match jwt with
           | Error e ->
-              Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+              json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
               |> Lwt.return
           | Ok jwt_string ->
-              Response.make ~status:`OK ~body:(Body.of_string jwt_string) ()
+            let body = `Assoc [ ("jwt", `String jwt_string)] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+              json_response ~status:`OK ~body ()
               |> Lwt.return ))
 
 
@@ -86,44 +94,45 @@ let verify req =
   req
   |> Request.to_json
   >>= function
-  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+  | None -> json_response ~status:`Bad_request ~body:(Body.of_string (print_error "There is no JSON body")) () |> Lwt.return
   | Some json ->
       let open Yojson.Safe.Util in
       let jwt = json |> member "jwt" |> to_string in
       ( match Service.Jwt.verify_and_get_iss jwt with
       | Error e ->
-          Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+          json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
           |> Lwt.return
       | Ok iss ->
-          Response.make ~status:`OK ~body:(Body.of_string iss) () |> Lwt.return
+        let body = `Assoc [ ("user_id", `String iss)] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+          json_response ~status:`OK ~body () |> Lwt.return
       )
 
 let get_member req = 
   let open Lwt in
     (
       match (Request.header "Authorization" req) with
-        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | None -> json_response ~status:`Forbidden ~body:(Body.of_string (print_error "There is no Authorization header")) () |> Lwt.return
         | Some authorization -> 
           let jwt = Str.string_after authorization 7 in
           (
             match Service.Jwt.verify_and_get_iss jwt with
             | Error e -> 
-                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
                 |> Lwt.return
             | Ok iss ->
               let id = Router.param req "id" in
               let matching_ids = id = iss in
               (
                 match matching_ids with
-                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | false -> json_response ~status:`Forbidden ~body:(Body.of_string (print_error "You are not the right user")) () |> Lwt.return
                 | true ->
                 MemberService.get_by_id ~id:id >>= 
                 (function
                   | Error e ->
-                    Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                    json_response ~status:`Bad_request ~body:(Body.of_string (print_error e)) ()
                     |> Lwt.return
                   | Ok member -> 
-                    Response.make ~status: `OK ~body:(Body.of_string (Yojson.Basic.pretty_to_string member)) ()
+                    json_response ~status: `OK ~body:(Body.of_string (Yojson.Basic.pretty_to_string member)) ()
                     |> Lwt.return
                 )
               )
@@ -134,28 +143,29 @@ let delete_member req =
   let open Lwt in
   (
     match (Request.header "Authorization" req) with
-        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | None -> json_response ~status:`Forbidden ~body:(Body.of_string (print_error "There is no Authorization header")) () |> Lwt.return
         | Some authorization -> 
           let jwt = Str.string_after authorization 7 in
           (
             match Service.Jwt.verify_and_get_iss jwt with
             | Error e -> 
-                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
                 |> Lwt.return
             | Ok iss ->
               let id = Router.param req "id" in
               let matching_ids = id = iss in
               (
                 match matching_ids with
-                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | false -> json_response ~status:`Forbidden ~body:(Body.of_string (print_error "You are not the right user")) () |> Lwt.return
                 | true ->
                 MemberService.delete_by_id ~id:id >>= 
                 (function
                   | Error e ->
-                    Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                    json_response ~status:`Bad_request ~body:(Body.of_string (print_error e)) ()
                     |> Lwt.return
                   | Ok member -> 
-                    Response.make ~status: `No_content ()
+                    let body = `Assoc [ ("status", `String "Deleted")] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+                    json_response ~status:`No_content ~body ()
                     |> Lwt.return
                 )
               )
@@ -166,25 +176,25 @@ let update_member req =
   let open Lwt in
   (
     match (Request.header "Authorization" req) with
-        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | None -> json_response ~status:`Forbidden ~body:(Body.of_string (print_error "There is no Authorization header")) () |> Lwt.return
         | Some authorization -> 
           let jwt = Str.string_after authorization 7 in
           (
             match Service.Jwt.verify_and_get_iss jwt with
             | Error e -> 
-                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
                 |> Lwt.return
             | Ok iss ->
               let id = Router.param req "id" in
               let matching_ids = id = iss in
               (
                 match matching_ids with
-                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | false -> json_response ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
                 | true ->
                   req
                   |> Request.to_json
                   >>= function
-                  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+                  | None -> json_response ~status:`Bad_request ~body:(Body.of_string (print_error "There is no JSON body")) () |> Lwt.return
                   | Some json ->
                       let open Yojson.Safe.Util in
                       let email = json |> member "email" |> to_string
@@ -193,11 +203,12 @@ let update_member req =
                         MemberService.update_by_id ~email ~password ~username ~id >>= 
                         (function
                           | Error e ->
-                            Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                            json_response ~status:`Bad_request ~body:(Body.of_string (print_error e)) ()
                             |> Lwt.return
                           | Ok member -> 
-                            Response.make ~status: `No_content ()
-                            |> Lwt.return
+                            let body = `Assoc [ ("status", `String "Updated")] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+                              json_response ~status:`No_content ~body ()
+                              |> Lwt.return
                         )
               )
           )
