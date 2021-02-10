@@ -93,7 +93,7 @@ module Environment = struct
             "[WARN] : POSTGRESQL_ADDON_PASSWORD environment variable is not \
              set, fallback to empty - USE ONLY FOR DEV"
         in
-        ""
+        "password"
 
 
   let db_uri =

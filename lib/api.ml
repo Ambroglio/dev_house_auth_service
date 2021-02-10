@@ -3,13 +3,14 @@
    obtain one at https://mozilla.org/MPL/2.0/ *)
 
 open Opium
+open Str
 
 (** Bind dependencies *)
 
 module Connection = (val Infra.Database.connect ())
 
 module PostgresRepository = Repository.Member (Connection)
-module MemberServive = Service.Member (PostgresRepository)
+module MemberService = Service.Member (PostgresRepository)
 
 let set_logger () =
   Logs.set_reporter (Logs_fmt.reporter ()) ;
@@ -44,7 +45,7 @@ let signup req =
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
       and password = json |> member "password" |> to_string in
-      MemberServive.signup ~email ~password
+      MemberService.signup ~email ~password
       >>= (function
       | Error e ->
           Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
@@ -63,7 +64,7 @@ let signin req =
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
       and password = json |> member "password" |> to_string in
-      MemberServive.signin ~email ~password
+      MemberService.signin ~email ~password
       >>= (function
       | Error e ->
           Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
@@ -97,6 +98,30 @@ let verify req =
           Response.make ~status:`OK ~body:(Body.of_string iss) () |> Lwt.return
       )
 
+let get_member req = 
+  let open Lwt in
+    (
+      match (Request.header "Authorization" req) with
+        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | Some authorization -> 
+          let jwt = Str.string_after authorization 7 in
+          (
+            match Service.Jwt.verify_and_get_iss jwt with
+            | Error e -> 
+                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                |> Lwt.return
+            | Ok iss ->
+              let id = Router.param req "id" in 
+              MemberService.get_by_id ~id:id >>= (function
+              | Error e ->
+                Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                |> Lwt.return
+              | Ok member -> 
+                Response.make ~status: `OK ~body:(Body.of_string (Yojson.Basic.pretty_to_string member)) ()
+                |> Lwt.return
+              )
+          )
+    )
 
 let routes =
   [ App.get "/" root
@@ -104,6 +129,7 @@ let routes =
   ; App.post "/signup" signup
   ; App.post "/signin" signin
   ; App.post "/verify" verify
+  ; App.get "/member/:id" get_member
   ]
 
 

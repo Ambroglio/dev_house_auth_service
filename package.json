@@ -40,14 +40,14 @@
         ],
         "require": [
           "emile", "safepass", "uuidm", "jwto", "caqti", "caqti-lwt",
-          "caqti-driver-postgresql", "ppx_rapper.runtime", "opium", "logs"
+          "caqti-driver-postgresql", "ppx_rapper.runtime", "opium", "logs", "str"
         ]
       },
       "bin": {
         "main": "server",
         "bin": "server.ml",
         "name": "auth",
-        "require": [ "auth.lib", "opium" ]
+        "require": [ "auth.lib", "opium", "str" ]
       }
     }
   }

@@ -43,6 +43,18 @@ module Jwt = struct
 end
 
 module Member (MemberRepository : Repository.MEMBER) = struct
+  open Yojson.Basic.Util
+
+  let print_pretty username email = 
+    let username_value = 
+      match username with
+      | Some str -> str
+      | None -> "" 
+    and
+    email_value = D.Email.show email
+    in
+    `Assoc [("username", `String username_value);("email", `String email_value);]
+
   let signup ~email ~password =
     let id = D.Uuid.v4_gen E.random_seed () in
     let hash = D.Hash.make ~seed:E.hash_seed password in
@@ -66,4 +78,14 @@ module Member (MemberRepository : Repository.MEMBER) = struct
         >>= (function
         | Ok db_result -> Lwt.return_ok @@ Jwt.from_member db_result
         | Error _ -> Lwt.return_error "Wrong email or password")
+
+  let get_by_id ~id =
+    match D.Uuid.make id with
+      | Error e -> Lwt.return_error e
+      | Ok uuid ->  
+        let open Lwt in 
+        MemberRepository.get_by_id ~id:uuid
+        >>= (function
+        | Ok db_result -> Lwt.return_ok @@ (print_pretty db_result.username db_result.email)
+        | Error _ -> Lwt.return_error "An error occured")
 end
