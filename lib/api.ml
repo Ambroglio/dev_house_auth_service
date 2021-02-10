@@ -130,6 +130,79 @@ let get_member req =
           )
     )
 
+let delete_member req = 
+  let open Lwt in
+  (
+    match (Request.header "Authorization" req) with
+        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | Some authorization -> 
+          let jwt = Str.string_after authorization 7 in
+          (
+            match Service.Jwt.verify_and_get_iss jwt with
+            | Error e -> 
+                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                |> Lwt.return
+            | Ok iss ->
+              let id = Router.param req "id" in
+              let matching_ids = id = iss in
+              (
+                match matching_ids with
+                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | true ->
+                MemberService.delete_by_id ~id:id >>= 
+                (function
+                  | Error e ->
+                    Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                    |> Lwt.return
+                  | Ok member -> 
+                    Response.make ~status: `No_content ()
+                    |> Lwt.return
+                )
+              )
+          )
+  )
+
+let update_member req =
+  let open Lwt in
+  (
+    match (Request.header "Authorization" req) with
+        | None -> Response.make ~status:`Forbidden () |> Lwt.return
+        | Some authorization -> 
+          let jwt = Str.string_after authorization 7 in
+          (
+            match Service.Jwt.verify_and_get_iss jwt with
+            | Error e -> 
+                Response.make ~status:`Forbidden ~body:(Body.of_string e) ()
+                |> Lwt.return
+            | Ok iss ->
+              let id = Router.param req "id" in
+              let matching_ids = id = iss in
+              (
+                match matching_ids with
+                | false -> Response.make ~status:`Forbidden ~body:(Body.of_string "You are not the right user") () |> Lwt.return
+                | true ->
+                  req
+                  |> Request.to_json
+                  >>= function
+                  | None -> Response.make ~status:`Bad_request () |> Lwt.return
+                  | Some json ->
+                      let open Yojson.Safe.Util in
+                      let email = json |> member "email" |> to_string
+                      and password = json |> member "password" |> to_string 
+                      and username = json |> member "username" |> to_string in
+                        MemberService.update_by_id ~email ~password ~username ~id >>= 
+                        (function
+                          | Error e ->
+                            Response.make ~status:`Bad_request ~body:(Body.of_string e) ()
+                            |> Lwt.return
+                          | Ok member -> 
+                            Response.make ~status: `No_content ()
+                            |> Lwt.return
+                        )
+              )
+          )
+  )
+
 let routes =
   [ App.get "/" root
   ; App.post "/echo" echo
@@ -137,6 +210,8 @@ let routes =
   ; App.post "/signin" signin
   ; App.post "/verify" verify
   ; App.get "/member/:id" get_member
+  ; App.delete "/member/:id" delete_member
+  ; App.put "/member/:id" update_member
   ]
 
 

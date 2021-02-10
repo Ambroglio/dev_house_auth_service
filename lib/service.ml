@@ -88,4 +88,28 @@ module Member (MemberRepository : Repository.MEMBER) = struct
         >>= (function
         | Ok db_result -> Lwt.return_ok @@ (print_pretty db_result.username db_result.email)
         | Error _ -> Lwt.return_error "An error occured")
+
+  let delete_by_id ~id =
+    match D.Uuid.make id with
+      | Error e -> Lwt.return_error e
+      | Ok uuid -> 
+        let open Lwt in
+        MemberRepository.delete_by_id ~id:uuid
+        >>= (function
+        | Ok db_result -> Lwt.return_ok ()
+        | Error _ -> Lwt.return_error "An error occured")
+
+  let update_by_id ~email ~password ~username ~id =
+    match D.Uuid.make id with
+    | Error e -> Lwt.return_error e
+    | Ok uuid ->
+      let hash = D.Hash.make ~seed:E.hash_seed password in
+      match D.Email.make email with
+      | Error e -> Lwt.return_error e
+      | Ok member_email ->
+        let open Lwt in
+        MemberRepository.update ~email:member_email ~hash:hash ~username:(Some username) ~id:uuid
+        >>= (function
+        | Ok db_result -> Lwt.return_ok ()
+        | Error _ -> Lwt.return_error "Wrong email, password or username")
 end
