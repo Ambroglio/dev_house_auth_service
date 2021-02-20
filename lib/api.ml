@@ -19,14 +19,28 @@ let set_logger () =
 
 let print_error msg = `Assoc [ ("error_message", `String msg) ] |> Yojson.Basic.pretty_to_string
 
-let json_response ~status ~body = Response.make ~status ~body ~headers:(Httpaf.Headers.of_list [("Content-Type", "application/json");])
+let json_response ~status ~body = Response.make ~status ~body ~headers:(Httpaf.Headers.of_list 
+  [
+    ("Content-Type", "application/json");
+    ("Access-Control-Allow-Origin", "http://localhost:3006");
+    ("Access-Control-Allow-Headers", "content-type");
+  ]
+)
+
 
 (** Heartbeat route *)
 let root req =
   let open Lwt in
+    let body = `Assoc [ ("status", `String "CORS setter")] |> Yojson.Basic.pretty_to_string in
+      json_response ~status:`OK ~body:(Body.of_string body) ()
+      |> Lwt.return
+
+let handle_options req = 
+  let open Lwt in
     let body = `Assoc [ ("status", `String "all fine")] |> Yojson.Basic.pretty_to_string in
       json_response ~status:`OK ~body:(Body.of_string body) ()
       |> Lwt.return
+
 
 
 (** Testing purpose route *)
@@ -222,7 +236,8 @@ let routes =
   ; App.post "/verify" verify
   ; App.get "/member/:id" get_member
   ; App.delete "/member/:id" delete_member
-  ; App.put "/member/:id" update_member
+  ; App.put "/member/:id" update_member 
+  ; App.options "/**" handle_options 
   ]
 
 
