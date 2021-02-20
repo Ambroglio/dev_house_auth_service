@@ -65,7 +65,7 @@ module Member (MemberRepository : Repository.MEMBER) = struct
         MemberRepository.create ~id ~hash ~email:member_email
         >>= (function
         | Ok db_result -> Lwt.return_ok ()
-        | Error _ -> Lwt.return_error "Unable to create")
+        | Error _ -> Lwt.return_error "User already exists")
 
 
   let signin ~email ~password =

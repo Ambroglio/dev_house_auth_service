@@ -63,15 +63,24 @@ let signup req =
   | Some json ->
       let open Yojson.Safe.Util in
       let email = json |> member "email" |> to_string
-      and password = json |> member "password" |> to_string in
-      MemberService.signup ~email ~password
-      >>= (function
-      | Error e ->
-          json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
+      and password = json |> member "password" |> to_string 
+      and confirmPassword = json |> member "confirmPassword" |> to_string in 
+      if (Bool.not (String.equal password confirmPassword)) then
+        json_response ~status:`Forbidden ~body:(Body.of_string (print_error "Passwords don't match")) ()
           |> Lwt.return
-      | Ok _ -> 
-        let body = `Assoc [ ("status", `String "Signed up")] |> Yojson.Basic.pretty_to_string |> Body.of_string in
-        json_response ~status:`Created ~body () |> Lwt.return)
+      else 
+        if ((String.length password) < 7) then 
+          json_response ~status:`Forbidden ~body:(Body.of_string (print_error "Password must have a length of 7 or more")) ()
+          |> Lwt.return
+        else
+          MemberService.signup ~email ~password
+          >>= (function
+          | Error e ->
+              json_response ~status:`Forbidden ~body:(Body.of_string (print_error e)) ()
+              |> Lwt.return
+          | Ok _ -> 
+            let body = `Assoc [ ("status", `String "Signed up")] |> Yojson.Basic.pretty_to_string |> Body.of_string in
+            json_response ~status:`Created ~body () |> Lwt.return)
 
 
 (** Singnin route *)
