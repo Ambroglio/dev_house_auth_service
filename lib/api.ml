@@ -25,7 +25,8 @@ let json_response ~status ~body = Response.make ~status ~body ~headers:(Httpaf.H
     ("Access-Control-Allow-Origin", "http://localhost:3006");
     ("Access-Control-Allow-Headers", "content-type");
     ("Access-Control-Allow-Headers", "authorization");
-    ("Access-Control-Allow-Methods", "PUT, POST, GET, OPTIONS, DELETE")
+    ("Access-Control-Allow-Methods", "PUT, POST, GET, OPTIONS, DELETE");
+    ("Access-Control-Max-Age", "3600")
   ]
 )
 
